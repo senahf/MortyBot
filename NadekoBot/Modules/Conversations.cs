@@ -42,20 +42,30 @@ namespace NadekoBot.Modules {
                     .Do(async e => {
                         await e.Channel.SendMessage(e.User.Mention + "\\o\\");
                     });
-                cgb.CreateCommand("notification")
+                cgb.CreateCommand("!notification")
                     .Description("Adds a notification when the keyword is present")
                     .Parameter("keyword", ParameterType.Unparsed)
                     .Do(async e => {
+                        
                         if (string.IsNullOrWhiteSpace(e.GetArg("keyword"))) { await e.Channel.SendMessage("The correct syntax for the command is `!notification keyword here`");  return; }
-                        String entry = $"{e.User.Id};{e.GetArg("keyword")}";
-                        if (File.ReadAllText("notifications.txt").Contains(entry))
+                        try
                         {
-                            await e.Channel.SendMessage($"{e.User.Mention}, You already have a notification for `{e.GetArg("keyword")}`");
-                        } else
-                        {
+
+                            String entry = $"{e.GetArg("keyword")};{e.User.Id}";
+                            if (File.ReadAllText("notifications.txt").Contains(entry))
+                            {
+                                await e.Channel.SendMessage($"{e.User.Mention}, You already have a notification for `{e.GetArg("keyword")}`");
+                                return;
+                            }
+
                             File.AppendAllText("notifications.txt",
                    $"{entry}\r\n");
                             await e.Channel.SendMessage($"Added notification for `{e.GetArg("keyword")}`");
+
+                        }
+                        catch (Exception ex)
+                        {
+                            await e.Channel.SendMessage(ex.ToString());
                         }
                     });
 
