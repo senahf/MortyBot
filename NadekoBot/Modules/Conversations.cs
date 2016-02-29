@@ -54,7 +54,7 @@ namespace NadekoBot.Modules {
                             String entry = $"{e.GetArg("keyword")};{e.User.Id}";
                             if (File.ReadAllText("notifications.txt").Contains(entry))
                             {
-                                await e.Channel.SendMessage($"{e.User.Mention}, You already have a notification for `{e.GetArg("keyword")}`");
+                                await e.Channel.SendMessage($"MY{e.User.Mention}, You already have a notification for `{e.GetArg("keyword")}`");
                                 return;
                             }
 

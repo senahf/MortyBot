@@ -163,24 +163,30 @@ namespace NadekoBot {
             if (e.Message.Text.StartsWith("!") || e.Message.Text.StartsWith(".") || e.Message.Text.StartsWith("~") || e.Channel == null || e.User.Id == 153586072092147712) return;
             new Thread(async () =>
             {
-                Thread.Sleep(5000);
-                Thread.CurrentThread.IsBackground = true;
-                StreamReader file = new StreamReader("notifications.txt");
-                String line;
-                while ((line = file.ReadLine()) != null)
+                try
                 {
-                    int index = line.IndexOf(";");
-                    string keyword = (index > 0 ? line.Substring(0, index) : "");
-                    string user = line.Substring(line.LastIndexOf(';') + 1);
-                    if (e.Message.Text.Contains(keyword))
+                    Thread.Sleep(2000);
+                    Thread.CurrentThread.IsBackground = true;
+                    StreamReader file = new StreamReader("notifications.txt");
+                    String line;
+                    while ((line = file.ReadLine()) != null)
                     {
-                        if (Convert.ToUInt64(user) == e.User.Id) return;
-                        Channel rawr = await client.CreatePrivateChannel(Convert.ToUInt64(user));
-                        await rawr.SendMessage($"{e.User.Name} mentioned you in {e.Channel.Name} with the following message:\r\n```{e.Message.Text}```");
+                        int index = line.IndexOf(";");
+                        string keyword = (index > 0 ? line.Substring(0, index) : "");
+                        string user = line.Substring(line.LastIndexOf(';') + 1);
+                        user = user.Remove(0, 2);
+                        if (e.Message.Text.Contains(keyword))
+                        {
+                            if (Convert.ToUInt64(user) == e.User.Id) return;
+                            Channel rawr = await client.CreatePrivateChannel(Convert.ToUInt64(user));
+                            await rawr.SendMessage($"{e.User.Name} mentioned you in {e.Channel.Name} with the following message:\r\n```{e.Message.Text}```");
+                        }
                     }
+                    file.Close();
+                } catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
                 }
-                file.Close();
-
             }).Start();
         }
         private static async void Client_MessageReceived(object sender, MessageEventArgs e) {
