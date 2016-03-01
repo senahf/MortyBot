@@ -91,6 +91,7 @@ namespace NadekoBot.Modules {
 
         private async void getPlaying(CommandEventArgs e)
         {
+            Thread.Sleep(2000); // give it some time to queue
             do
             {
                 var client = NadekoBot.client;
