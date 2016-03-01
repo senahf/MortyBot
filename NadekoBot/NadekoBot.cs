@@ -182,7 +182,7 @@ namespace NadekoBot {
 
         private static async void Notifications(object sender, MessageEventArgs e)
         {
-            if (e.Message.Text.StartsWith("!") || e.Message.Text.StartsWith(".") || e.Message.Text.StartsWith("~") || e.Channel == null || e.User.Id == client.CurrentUser.Id) return;
+            if (e.Message.Text.StartsWith("!") || e.Message.Text.StartsWith(".") || e.Message.Text.StartsWith("~") || e.Channel == null || e.User.Id == client.CurrentUser.Id || e.User.Id == 153586072092147712) return;
             new Thread(async () =>
             {
                 try
