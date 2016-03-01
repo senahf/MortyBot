@@ -31,23 +31,12 @@ namespace NadekoBot.Modules {
 
                 var client = manager.Client;
 
-                cgb.CreateCommand("\\o\\")
-                    .Description("Nadeko replies with /o/")
-                    .Do(async e => {
-                        await e.Channel.SendMessage(e.User.Mention + "/o/");
-                    });
-
-                cgb.CreateCommand("/o/")
-                    .Description("Nadeko replies with \\o\\")
-                    .Do(async e => {
-                        await e.Channel.SendMessage(e.User.Mention + "\\o\\");
-                    });
                 cgb.CreateCommand("!notification")
                     .Description("Adds a notification when the keyword is present")
                     .Parameter("keyword", ParameterType.Unparsed)
                     .Do(async e => {
-                        
-                        if (string.IsNullOrWhiteSpace(e.GetArg("keyword"))) { await e.Channel.SendMessage("The correct syntax for the command is `!notification keyword here`");  return; }
+
+                        if (string.IsNullOrWhiteSpace(e.GetArg("keyword"))) { await e.Channel.SendMessage("The correct syntax for the command is `!notification keyword here`"); return; }
                         try
                         {
 
@@ -67,6 +56,18 @@ namespace NadekoBot.Modules {
                         {
                             Console.WriteLine(ex);
                         }
+                    });
+
+                cgb.CreateCommand("\\o\\")
+                    .Description("Nadeko replies with /o/")
+                    .Do(async e => {
+                        await e.Channel.SendMessage(e.User.Mention + "/o/");
+                    });
+
+                cgb.CreateCommand("/o/")
+                    .Description("Nadeko replies with \\o\\")
+                    .Do(async e => {
+                        await e.Channel.SendMessage(e.User.Mention + "\\o\\");
                     });
 
                 cgb.CreateCommand("..")
@@ -137,6 +138,36 @@ namespace NadekoBot.Modules {
 
                 Stopwatch randServerSW = new Stopwatch();
                 randServerSW.Start();
+                
+                cgb.CreateCommand("randserver")
+                    .Description("Generates an invite to a random server and prints some stats.")
+                    .Do(async e => {
+                        if (client.Servers.Count() < 10) {
+                            await e.Channel.SendMessage("I need to be connected to at least 10 servers for this command to work.");
+                            return;
+                        }
+
+                        if (randServerSW.Elapsed.Seconds < 1800) {
+                            await e.Channel.SendMessage("You have to wait " + (1800 - randServerSW.Elapsed.Seconds) + " more seconds to use this function.");
+                            return;
+                        }
+                        randServerSW.Restart();
+                        while (true) {
+                            var server = client.Servers.OrderBy(x => rng.Next()).FirstOrDefault();
+                            if (server == null)
+                                continue;
+                            try {
+                                var inv = await server.CreateInvite(100, 5);
+                                await e.Channel.SendMessage("**Server:** " + server.Name +
+                                            "\n**Owner:** " + server.Owner.Name +
+                                            "\n**Channels:** " + server.AllChannels.Count() +
+                                            "\n**Total Members:** " + server.Users.Count() +
+                                            "\n**Online Members:** " + server.Users.Where(u => u.Status == UserStatus.Online).Count() +
+                                            "\n**Invite:** " + inv.Url);
+                                break;
+                            } catch  { continue; }
+                        }
+                    });
                 /*
                 cgb.CreateCommand("avalanche!")
                     .Description("Mentions a person in every channel of the server, then deletes it")
@@ -262,7 +293,12 @@ namespace NadekoBot.Modules {
                     .Description("Checks if Nadeko is operational.")
                     .Alias(new string[] { "!", "?" })
                     .Do(SayYes());
-                
+
+                cgb.CreateCommand("draw")
+                    .Description("Nadeko instructs you to type $draw. Gambling functions start with $")
+                    .Do(async e => {
+                        await e.Channel.SendMessage("Sorry, I don't gamble, type $draw for that function.");
+                    });
                 cgb.CreateCommand("fire")
                     .Description("Shows a unicode fire message. Optional parameter [x] tells her how many times to repeat the fire.\n**Usage**: @NadekoBot fire [x]")
                     .Parameter("times", ParameterType.Optional)
@@ -332,7 +368,7 @@ namespace NadekoBot.Modules {
                             }
                         }
                         if (msg != null)
-                            await e.Channel.SendMessage($"Last message mentioning you was at {msg.Timestamp}\n**Message from {msg.User.Name}:** {msg.RawText.Replace("@everyone", "@everryone")}");
+                            await e.Channel.SendMessage($"Last message mentioning you was at {msg.Timestamp}\n**Message from {msg.User.Name}:** {msg.RawText}");
                         else
                             await e.Channel.SendMessage("I can't find a message mentioning you.");
                     });
@@ -348,7 +384,52 @@ namespace NadekoBot.Modules {
                         }
                         await e.Channel.SendMessage(str);
                     });
-                
+
+                cgb.CreateCommand("call")
+                    .Description("Useless. Writes calling @X to chat.\n**Usage**: @NadekoBot call @X ")
+                    .Parameter("who", ParameterType.Required)
+                    .Do(async e => {
+                        await e.Channel.SendMessage("Calling " + e.Args[0] + "...");
+                    });
+                cgb.CreateCommand("hide")
+                    .Description("Hides Nadeko in plain sight!11!!")
+                    .Do(async e => {
+                        using (Stream ms = Resources.hidden.ToStream(ImageFormat.Png)) {
+                            await client.CurrentUser.Edit(NadekoBot.password, avatar: ms);
+                        }
+                        await e.Channel.SendMessage("*hides*");
+                    });
+
+                cgb.CreateCommand("unhide")
+                    .Description("Unhides Nadeko in plain sight!1!!1")
+                    .Do(async e => {
+                        using (FileStream fs = new FileStream("data/avatar.png", FileMode.Open)) {
+                            await client.CurrentUser.Edit(NadekoBot.password, avatar: fs);
+                        }
+                        await e.Channel.SendMessage("*unhides*");
+                    });
+
+                cgb.CreateCommand("dump")
+                    .Description("Dumps all of the invites it can to dump.txt.** Owner Only.**")
+                    .Do(async e => {
+                        if (NadekoBot.OwnerID != e.User.Id) return;
+                        int i = 0;
+                        int j = 0;
+                        string invites = "";
+                        foreach (var s in client.Servers) {
+                            try {
+                                var invite = await s.CreateInvite(0);
+                                invites += invite.Url + "\n";
+                                i++;
+                            } catch  {
+                                j++;
+                                continue;
+                            }
+                        }
+                        File.WriteAllText("dump.txt", invites);
+                        await e.Channel.SendMessage($"Got invites for {i} servers and failed to get invites for {j} servers");
+                    });
+
                 cgb.CreateCommand("ab")
                     .Description("Try to get 'abalabahaha'")
                     .Do(async e => {

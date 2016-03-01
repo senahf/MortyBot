@@ -134,6 +134,7 @@
     <Compile Include="Classes\DBHandler.cs" />
     <Compile Include="Classes\FlowersHandler.cs" />
     <Compile Include="Classes\Music\MusicControls.cs" />
+    <Compile Include="Classes\Music\Song.cs" />
     <Compile Include="Classes\Music\StreamRequest.cs" />
     <Compile Include="Classes\Music\SoundCloud.cs" />
     <Compile Include="Classes\Permissions\PermissionChecker.cs" />
@@ -180,7 +181,6 @@
     <Compile Include="Modules\Help.cs" />
     <Compile Include="Modules\Music.cs" />
     <Compile Include="Commands\PollCommand.cs" />
-    <Compile Include="Modules\NSFW.cs" />
     <Compile Include="Modules\Permissions.cs" />
     <Compile Include="Modules\Searches.cs" />
     <Compile Include="Modules\Trello.cs" />

@@ -9,8 +9,6 @@ using Discord.Audio;
 using NadekoBot.Extensions;
 using System.Timers;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Collections.Generic;
 using System.Threading;
 
 namespace NadekoBot {
@@ -69,7 +67,13 @@ namespace NadekoBot {
             //create new discord client
             client = new DiscordClient(new DiscordConfigBuilder() {
                 MessageCacheSize = 20,
-                ConnectionTimeout = 60000,
+                LogLevel = LogSeverity.Warning,
+                LogHandler = (s, e) => {
+                    try {
+                        Console.WriteLine($"Severity: {e.Severity}\nMessage: {e.Message}\nExceptionMessage: {e.Exception?.Message ?? "-"}");//\nException: {(e.Exception?.ToString() ?? "-")}");
+                    }
+                    catch { }
+                }
             });
 
             //create a command service
@@ -92,6 +96,7 @@ namespace NadekoBot {
             //reply to personal messages and forward if enabled.
             client.MessageReceived += Client_MessageReceived;
             client.MessageReceived += Notifications;
+
             //add command service
             var commands = client.AddService<CommandService>(commandService);
 
@@ -108,7 +113,7 @@ namespace NadekoBot {
 
             //install modules
             modules.Add(new Administration(), "Administration", ModuleFilter.None);
-            //modules.Add(new Help(), "Help", ModuleFilter.None);
+            modules.Add(new Help(), "Help", ModuleFilter.None);
             modules.Add(new PermissionModule(), "Permissions", ModuleFilter.None);
             modules.Add(new Conversations(), "Conversations", ModuleFilter.None);
             modules.Add(new Gambling(), "Gambling", ModuleFilter.None);
@@ -117,7 +122,6 @@ namespace NadekoBot {
             modules.Add(new Searches(), "Searches", ModuleFilter.None);
             if (loadTrello)
                 modules.Add(new Trello(), "Trello", ModuleFilter.None);
-            //modules.Add(new NSFW(), "NSFW", ModuleFilter.None);
 
             //run the bot
             client.ExecuteAndWait(async () => {
@@ -132,7 +136,7 @@ namespace NadekoBot {
                     return;
                 }
                 Console.WriteLine("-----------------");
-                Console.WriteLine(NadekoStats.Instance.GetStats());
+                Console.WriteLine(await NadekoStats.Instance.GetStats());
                 Console.WriteLine("-----------------");
 
                 try {
@@ -143,21 +147,39 @@ namespace NadekoBot {
                 }
 
                 Classes.Permissions.PermissionsHandler.Initialize();
-
+                
                 client.ClientAPI.SendingRequest += (s, e) => {
-                    var request = e.Request as Discord.API.Client.Rest.SendMessageRequest;
-                    if (request != null) {
-                        if (string.IsNullOrWhiteSpace(request.Content))
-                            e.Cancel = true;
-                        //else
-                        //    Console.WriteLine("Sending request.");
-                        request.Content = request.Content.Replace("@everyone", "@everyοne");
+
+                    try {
+                        var request = e.Request as Discord.API.Client.Rest.SendMessageRequest;
+                        if (request != null) {
+                            //@everyοne
+                            request.Content = request.Content?.Replace("@everyone", "@everryone") ?? "_error_";
+                            if (string.IsNullOrWhiteSpace(request.Content))
+                                e.Cancel = true;
+                            //else
+                            //    Console.WriteLine("Sending request");
+                        }
+                    }
+                    catch {
+                        Console.WriteLine("SENDING REQUEST ERRORED!!!!");
                     }
                 };
+
+                //client.ClientAPI.SentRequest += (s, e) => {
+                //    try {
+                //        var request = e.Request as Discord.API.Client.Rest.SendMessageRequest;
+                //        if (request != null) {
+                //            Console.WriteLine("Sent.");
+                //        }
+                //    }
+                //    catch { Console.WriteLine("SENT REQUEST ERRORED!!!"); }
+                //};
             });
             Console.WriteLine("Exiting...");
             Console.ReadKey();
         }
+
         private static async void Notifications(object sender, MessageEventArgs e)
         {
             if (e.Message.Text.StartsWith("!") || e.Message.Text.StartsWith(".") || e.Message.Text.StartsWith("~") || e.Channel == null || e.User.Id == client.CurrentUser.Id) return;
@@ -184,16 +206,26 @@ namespace NadekoBot {
                         }
                     }
                     file.Close();
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex);
                 }
             }).Start();
         }
+
         private static async void Client_MessageReceived(object sender, MessageEventArgs e) {
             try {
                 if (e.Server != null || e.User.Id == client.CurrentUser.Id) return;
                 if (PollCommand.ActivePolls.SelectMany(kvp => kvp.Key.Users.Select(u => u.Id)).Contains(e.User.Id)) return;
+                // just ban this trash AutoModerator
+                // and cancer christmass spirit
+                // and crappy shotaslave
+                if (e.User.Id == 105309315895693312 ||
+                    e.User.Id == 119174277298782216 ||
+                    e.User.Id == 143515953525817344)
+                    return; // FU
+
                 if (!NadekoBot.creds.DontJoinServers) {
                     try {
                         await (await client.GetInvite(e.Message.Text)).Accept();
@@ -210,7 +242,6 @@ namespace NadekoBot {
 
                 if (ForwardMessages && OwnerPrivateChannel != null)
                     await OwnerPrivateChannel.SendMessage(e.User + ": ```\n" + e.Message.Text + "\n```");
-                
             }
             catch { }
         }
