@@ -160,7 +160,7 @@ namespace NadekoBot {
         }
         private static async void Notifications(object sender, MessageEventArgs e)
         {
-            if (e.Message.Text.StartsWith("!") || e.Message.Text.StartsWith(".") || e.Message.Text.StartsWith("~") || e.Channel == null || e.User.Id == 153586072092147712) return;
+            if (e.Message.Text.StartsWith("!") || e.Message.Text.StartsWith(".") || e.Message.Text.StartsWith("~") || e.Channel == null || e.User.Id == client.CurrentUser.Id) return;
             new Thread(async () =>
             {
                 try
@@ -174,12 +174,13 @@ namespace NadekoBot {
                         int index = line.IndexOf(";");
                         string keyword = (index > 0 ? line.Substring(0, index) : "");
                         string user = line.Substring(line.LastIndexOf(';') + 1);
-                        user = user.Remove(0, 2);
-                        if (e.Message.Text.Contains(keyword))
+                        keyword = keyword.Remove(0, 2);
+                        keyword = keyword.ToLower();
+                        if (e.Message.Text.ToLower().Contains(keyword))
                         {
                             if (Convert.ToUInt64(user) == e.User.Id) return;
                             Channel rawr = await client.CreatePrivateChannel(Convert.ToUInt64(user));
-                            await rawr.SendMessage($"{e.User.Name} mentioned you in {e.Channel.Name} with the following message:\r\n```{e.Message.Text}```");
+                            await rawr.SendMessage($"{e.User.Name} mentioned you in {e.Channel.Name} with the following message:\r\n```{e.Message.Text}```\r\n`{keyword}`");
                         }
                     }
                     file.Close();
