@@ -215,14 +215,32 @@ namespace NadekoBot.Modules {
                     });
 
                 cgb.CreateCommand("np")
-                    .Alias("playing")
-                    .Description("Shows the song currently playing.")
-                    .Do(async e => {
-                        MusicPlayer musicPlayer;
-                        if (!musicPlayers.TryGetValue(e.Server, out musicPlayer))
-                            return;
-                        await e.Channel.SendMessage($"🎵`Now Playing` {musicPlayer.CurrentSong.PrettyName}");
-                    });
+                 .Alias("playing")
+                 .Description("Shows the song currently playing.")
+                 .Do(async e =>
+                 {
+                     if (musicPlayers.ContainsKey(e.Server) == false) return;
+                     var player = musicPlayers[e.Server];
+                     try
+                     {
+                         if (player.CurrentSong.SongInfo.ProviderType == MusicType.Radio)
+                         {
+
+                             var res = file_get_contents(player.CurrentSong.SongInfo.Title);
+                             if (res.Contains("SHOUTcast"))
+                             {
+                                 await e.Channel.SendMessage(GetStringInBetween("Current Song: </font></td><td><font class=default><b>", "</b></td>", res, false, false));
+                             }
+                             else { await e.Channel.SendMessage("`np` command for this radio not supported."); }
+                         }
+                         else
+                         {
+
+                             await e.Channel.SendMessage($"🎵`Now Playing` {player.CurrentSong.PrettyName}");
+                         }
+                     }
+                     catch (Exception ex) { Console.WriteLine(ex); }
+                 });
 
                 cgb.CreateCommand("vol")
                     .Description("Sets the music volume 0-150%")
