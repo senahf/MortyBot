@@ -246,13 +246,30 @@ namespace NadekoBot.Modules {
                     .Description("Rates the song")
                     .Parameter("choice")
                     .Do(async e => {
-                        if (string.IsNullOrWhiteSpace(e.GetArg("choice"))) { await e.User.SendMessage("Correct Syntax: `!rate <up/down>`"); return; }
-                        if (e.GetArg("choice") == "up" || e.GetArg("choice") == "u")
-                        {
 
+                        if (musicPlayers.ContainsKey(e.Server) == false) return;
+
+                        // Checks since radio songs probs more efficient for rating system.
+                        if (string.IsNullOrWhiteSpace(e.GetArg("choice"))) return;
+                        var player = musicPlayers[e.Server];
+                        if (player.CurrentSong.SongInfo.ProviderType != MusicType.Radio) return;
+
+                        var res = file_get_contents(player.CurrentSong.SongInfo.Title);
+                        String song = GetStringInBetween("Current Song: </font></td><td><font class=default><b>", "</b></td>", res, false, false);
+
+                        if (!res.Contains("SHOUTcast")) return;
+                            if (e.GetArg("choice") == "up" || e.GetArg("choice") == "u")
+                        {
+                            // upvotes.txt
+                            // RTsongname;uid
+                            
                         } else if (e.GetArg("choice") == "down" || e.GetArg("choice") == "d")
                         {
-
+                            // downvotes.txt
+                            // RTsongname;uid
+                        } else
+                        {
+                            await e.Channel.Send("Correct Syntax: `!m rate <u/d>`");
                         }
                         await e.Send("Rated");
                     });
