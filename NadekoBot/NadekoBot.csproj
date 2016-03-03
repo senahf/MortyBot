@@ -182,6 +182,7 @@
     <Compile Include="Modules\Music.cs" />
     <Compile Include="Commands\PollCommand.cs" />
     <Compile Include="Modules\Permissions.cs" />
+    <Compile Include="Modules\Reminders.cs" />
     <Compile Include="Modules\Searches.cs" />
     <Compile Include="Modules\Trello.cs" />
     <Compile Include="Modules\Verification.cs" />

@@ -242,6 +242,21 @@ namespace NadekoBot.Modules {
                      catch (Exception ex) { Console.WriteLine(ex); }
                  });
 
+                cgb.CreateCommand("rate")
+                    .Description("Rates the song")
+                    .Parameter("choice")
+                    .Do(async e => {
+                        if (string.IsNullOrWhiteSpace(e.GetArg("choice"))) { await e.User.SendMessage("Correct Syntax: `!rate <up/down>`"); return; }
+                        if (e.GetArg("choice") == "up" || e.GetArg("choice") == "u")
+                        {
+
+                        } else if (e.GetArg("choice") == "down" || e.GetArg("choice") == "d")
+                        {
+
+                        }
+                        await e.Send("Rated");
+                    });
+
                 cgb.CreateCommand("vol")
                     .Description("Sets the music volume 0-150%")
                     .Parameter("val", ParameterType.Required)
