@@ -56,6 +56,14 @@ namespace NadekoBot.Modules {
             return sContents;
         }
 
+        private static int GetWordCount(string fileName, string word) //Leeched thx internet
+        {
+            string content = File.ReadAllText(fileName);
+            string[] words = content.Split(new char[] { '\n', '\r' },
+                         StringSplitOptions.RemoveEmptyEntries);
+            return words.Count(q => q.Contains(word));
+        }
+
         public static string GetStringInBetween(string strBegin, string strEnd, string strSource, bool includeBegin, bool includeEnd)
         {
             string[] result = { string.Empty, string.Empty };
@@ -121,8 +129,9 @@ namespace NadekoBot.Modules {
                                     else
                                     {
                                         sr.Close();
-
-                                        await e.Channel.SendMessage(song);
+                                        var upvotes = GetWordCount("upvotes.txt", $"RT{song}");
+                                        var downvotes = GetWordCount("downvotes.txt", $"RT{song}");
+                                        await e.Channel.SendMessage($"Now Playing: {song} with {upvotes} upvotes and {downvotes} downvotes!");
                                         using (var fs = new FileStream("rawr.txt", FileMode.Truncate))
                                         {
                                             fs.Close();
@@ -225,17 +234,18 @@ namespace NadekoBot.Modules {
                      {
                          if (player.CurrentSong.SongInfo.ProviderType == MusicType.Radio)
                          {
-
                              var res = file_get_contents(player.CurrentSong.SongInfo.Title);
                              if (res.Contains("SHOUTcast"))
                              {
-                                 await e.Channel.SendMessage(GetStringInBetween("Current Song: </font></td><td><font class=default><b>", "</b></td>", res, false, false));
+                                 var song = GetStringInBetween("Current Song: </font></td><td><font class=default><b>", "</b></td>", res, false, false);
+                                 var upvotes = GetWordCount("upvotes.txt", $"RT{song}");
+                                 var downvotes = GetWordCount("downvotes.txt", $"RT{song}");
+                                 await e.Channel.SendMessage($"Now Playing: {song} with {upvotes} upvotes and {downvotes} downvotes!");
                              }
                              else { await e.Channel.SendMessage("`np` command for this radio not supported."); }
                          }
                          else
                          {
-
                              await e.Channel.SendMessage($"🎵`Now Playing` {player.CurrentSong.PrettyName}");
                          }
                      }
@@ -244,9 +254,9 @@ namespace NadekoBot.Modules {
 
                 cgb.CreateCommand("rate")
                     .Description("Rates the song")
-                    .Parameter("choice")
+                    .Parameter("choice", ParameterType.Required)
                     .Do(async e => {
-
+                        // TODO: Clean up code: can be shorter in length by sending output message at the end.
                         if (musicPlayers.ContainsKey(e.Server) == false) return;
 
                         // Checks since radio songs probs more efficient for rating system.
@@ -258,20 +268,52 @@ namespace NadekoBot.Modules {
                         String song = GetStringInBetween("Current Song: </font></td><td><font class=default><b>", "</b></td>", res, false, false);
 
                         if (!res.Contains("SHOUTcast")) return;
-                            if (e.GetArg("choice") == "up" || e.GetArg("choice") == "u")
+                        String entry = $"RT{song};{e.User.Id}";
+
+                        if (song.Contains("bigbradio")) { await e.Channel.Send("There doesn't seem to be an actual song playing yet. Try again in a few seconds."); return; }
+
+                        if (e.GetArg("choice") == "up" || e.GetArg("choice") == "u")
                         {
                             // upvotes.txt
                             // RTsongname;uid
-                            
-                        } else if (e.GetArg("choice") == "down" || e.GetArg("choice") == "d")
+                            if (File.ReadAllText("upvotes.txt").Contains(entry))
+                            {
+                                await e.User.SendMessage($"You have already upvoted `{song}`!");
+                                return;
+                            } else if (File.ReadAllText("downvotes.txt").Contains(entry))
+                            {
+                                File.WriteAllLines("downvotes.txt", File.ReadLines("downvotes.txt").Where(l => l != entry).ToList());
+                                File.AppendAllText("upvotes.txt", $"{entry}\r\n");
+                                await e.User.SendMessage($"Changed your downvote to an upvote for the song: `{song}`");
+                            } else
+                            {
+                                File.AppendAllText("upvotes.txt", $"{entry}\r\n");
+                                await e.Channel.Send($"Added an upvote for `{song}`");
+                            }
+                        }
+                        else if (e.GetArg("choice") == "down" || e.GetArg("choice") == "d")
                         {
                             // downvotes.txt
                             // RTsongname;uid
-                        } else
+                            if (File.ReadAllText("downvotes.txt").Contains(entry))
+                            {
+                                await e.User.SendMessage($"You have already downvoted `{song}`!");
+                                return;
+                            } else if (File.ReadAllText("upvotes.txt").Contains(entry))
+                            {
+                                File.WriteAllLines("upvotes.txt", File.ReadLines("upvotes.txt").Where(l => l != entry).ToList());
+                                File.AppendAllText("downvotes.txt", $"{entry}\r\n");
+                                await e.User.SendMessage($"Changed your upvote to an downvote for the song: `{song}`");
+                            } else
+                            {
+                                File.AppendAllText("downvotes.txt", $"{entry}\r\n");
+                                await e.Channel.Send($"Added a downvote for `{song}`");
+                            }
+                        }
+                        else
                         {
                             await e.Channel.Send("Correct Syntax: `!m rate <u/d>`");
                         }
-                        await e.Send("Rated");
                     });
 
                 cgb.CreateCommand("vol")
@@ -405,8 +447,10 @@ namespace NadekoBot.Modules {
                             return;
                         }
                         await QueueSong(e.Channel, e.User.VoiceChannel, e.GetArg("radio_link"), musicType: MusicType.Radio);
-                        if (!playing) { playing = true; new Thread(x => getPlaying(e)).Start(); }
-
+                        if (e.Server.Id == 151183130286489610) // TODO: Multi-server not supported yet.
+                        {
+                            if (!playing) { playing = true; new Thread(x => getPlaying(e)).Start(); }
+                        }
                     });
 
                 cgb.CreateCommand("lo")
